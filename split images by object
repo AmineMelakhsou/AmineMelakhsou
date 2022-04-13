@@ -1,0 +1,73 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Apr 11 16:05:44 2022
+
+@author: amine.melakhsou
+"""
+
+import os 
+import numpy as np
+from collections import Counter
+import pandas as pd
+from sklearn.model_selection import train_test_split
+dir=os.getcwd()
+f=open(dir+"\image_annot.txt","r").read()
+df=pd.DataFrame(columns=("image","class0","class1",
+                         "class2","class3"))
+obs=f.split("\n")
+classes=[]
+object_in_image=[]
+virtual_label=[]
+for i in range(len(obs)-1):
+    name=obs[i].split("jpg")[0]+"jpg"
+    items=obs[i].split(".")
+    items.pop(0)
+    items.pop(0)
+    items=items[0].split(" ")
+    items.pop(0)
+    object_count=[0,0,0,0,0]
+    object_count[0]=name
+
+    for j in range(len(items)):
+        label=items[j].split(",")[-1]
+        classes.append(label)
+        
+        object_count[int(label)+1]+=1
+    object_in_image.append(object_count)
+    virtual_label.append(np.argmax(object_count[1:]))
+
+counts=Counter(classes)
+print(counts)   
+
+N=list(counts.values())
+
+
+
+df=pd.DataFrame(object_in_image,columns=df.columns)
+names=df[["image"]]
+for i in range(1000):
+    xtrain,xtest,ytrain,ytest=train_test_split(names,virtual_label,test_size=0.15)
+    
+    train_ind=xtrain.index.values.tolist()
+    N_objects_train=df.loc[xtrain.index.values.tolist()]
+    
+    xtrainc0=N_objects_train["class0"].sum()
+    xtrainc1=N_objects_train["class1"].sum()
+    xtrainc2=N_objects_train["class2"].sum()
+    xtrainc3=N_objects_train["class3"].sum()
+    
+    
+    test_ind=xtest.index.values.tolist()
+    N_objects_test=df.loc[xtest.index.values.tolist()]
+    
+    xtestc0=N_objects_test["class0"].sum()
+    xtestc1=N_objects_test["class1"].sum()
+    xtestc2=N_objects_test["class2"].sum()
+    xtestc3=N_objects_test["class3"].sum()
+    i+=1
+    print(i)
+    if 0.14<=xtestc0/N[0]<=0.16 and 0.14<=xtestc1/N[1]<=0.16 and 0.14<=xtestc2/N[2]<=0.16 and 0.14<=xtestc3/N[3]<=0.16:
+        print("YESSS")
+        #xtrain.to_csv("training_images.csv")
+        xtest.to_csv("training_images.csv")
+        break
